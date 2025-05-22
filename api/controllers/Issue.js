@@ -158,6 +158,53 @@ module.exports = function(router) {
   });
 
   //=====================
+  // GET ISSUES COMMENTS BY STATION
+  //=====================
+  router.get('/api/issues/station/:name', function(request, response) {
+    let url = req && req.headers ? req.headers.host : '';
+    url = 'https://'+ url + '/api/sites?provider=tahmo&format=siteCodeObj';
+    url = 'https://tahmoissuetracker.mybluemix.net/api/sites?provider=tahmo&format=siteCodeObj';
+    let sites = {};
+    var name = request.params.name;
+    var status = {station: name};
+		fetch(url, {
+			method: 'GET',
+		})
+		.then(function(res) {
+			return res.json();
+		})
+		.then(function(response) {
+      if (response.success) {
+        sites = response.data;
+        Issue.find(status, function(err, issues) {
+          if (err) {
+            res
+              .status(200)
+              .send({success: false, message: 'Could not retrieve issues.'});
+          } else {
+            let data = modifyIssuesDate(issues, sites);
+            res.status(200).send({
+              success: true,
+              message: 'Issues retrieved successfully.',
+              count: data.length,
+              data: data
+            });
+          }
+        });
+      } else {
+        res
+          .status(200)
+          .send({success: false, message: 'Could not retrieve sites. Therefore no issues retrieved.'});
+      }
+		})
+		.catch(function(err) {
+      res
+        .status(200)
+        .send({success: false, message: 'Could not retrieve sites. Therefore no issues retrieved.'});
+		});
+   });
+  
+  //=====================
   // GET ISSUES COMMENTS BY ID
   //=====================
   router.get('/api/issues/:id/comments', function(req, res) {
